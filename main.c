@@ -1,53 +1,87 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-#define TRIE_CHILDREN 26
+#define TRIE_SIZE 26
 
 static char line[256];
 
 typedef struct trie_node trie_node;
 
 struct trie_node {
-	trie_node* child[TRIE_CHILDREN];
+	trie_node *children[TRIE_SIZE];
 	int terminal;
 };
 
-trie_node* trie_node_malloc(void) {
+trie_node* trie_alloc(void) {
 	trie_node *node = malloc(sizeof *node);
 	if (node == NULL)
 		return NULL;
 
+	for (size_t i = 0; i < TRIE_SIZE; i++)
+		node->children[i] = NULL;
 	node->terminal = 0;
-	for (size_t i = 0; i < TRIE_CHILDREN; i++)
-		node->child[i] = NULL;
+
 	return node;
 }
 
-void trie_insert(trie_node *head, char *str) {
-	if (head == NULL || str == NULL)
+size_t trie_index(char value) {
+	return value - 'a';
+}
+
+/*
+void trie_insert(trie_node **node, char *data, size_t size) {
+	if (node == NULL || *node == NULL)
 		return;
 
-	for ( ; *str != '\0'; str++) {
-		trie_node* child = head->child[(*str) - 'a'];
+	for (size_t i = 0; i < size; i++) {
+		size_t index = trie_index(data[i]);
+		trie_node *child = (*node)->children[index];
 
-		if (child == NULL)
-			child = trie_node_malloc();
-		
-		if (child == NULL)
-			abort();
+		if (child == NULL) {
+			cihld = trie_alloc();
 
-		head = child;
+			if (child == NULL) {
+				trie_free(node);
+				*node = NULL;
+				return;
+			}
+		}
+
+		*node = (*node)->children[index];
+			
 	}
+}
+*/
 
-	head->terminal++;
+void trie_free(trie_node** node) {
+	if (node == NULL || *node == NULL)
+		return;
+
+	// Dereferencing trie_node *node == NULL is defined
+	for (size_t i = 0; i < TRIE_SIZE; i++)
+		trie_free(&(*node)->children[i]);
+
+	free(*node);
+	*node = NULL;
+}
+
+size_t strlen(char* str) {
+	size_t size = 0;
+	while (str[size] != '\0')
+		size++;
+	return size;
 }
 
 int main(void) {
-	trie_node *head = trie_node_malloc();
-	if (head == NULL)
+
+	trie_node *node = trie_alloc();	
+	if (node == NULL) {
+		fprintf(stderr, "Failed to create a trie_node\n");
 		return 1;
-	
+	}
+
+	trie_free(&node);
+
 	FILE* fin = fopen("words_alpha.txt", "r");
 	if (fin == NULL)
 		return 1;
@@ -57,14 +91,11 @@ int main(void) {
 		line_size = strlen(line);
 		if (line_size > max_line_size)
 			max_line_size = line_size;
-		trie_insert(head, line);
 	}
 
 	printf("\nThe maximum line length is %zu\n", max_line_size);
 
 	fclose(fin);
-
-	free(head);
 
 	return 0;
 }
